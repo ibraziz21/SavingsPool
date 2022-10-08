@@ -1,0 +1,80 @@
+// SPDX-License-Identifier: FREE TO USE
+pragma solidity 0.8.17;
+
+contract savingPool {
+        address public owner;
+        address public recepient;
+
+        // state variables used by owner function
+        uint public currentParticipants;
+        uint public contributionAmt;
+        uint public maxParticipants;
+       uint public endTime;
+        mapping (address => bool) hasBeenBeneficiary;
+
+    struct depositPayment {
+        uint balance;
+        bool hasApproved;
+    }
+    mapping(address=>depositPayment) public verifiedUser;
+
+    constructor() {
+            owner=msg.sender;        
+    }
+
+modifier onlyOwner {
+    require(msg.sender==owner,"Not Authorized to run this function");
+    _;
+}
+
+/* @Owner Privileges
+1. Sets the contribution amount
+2. Sets the maximum no. of participants
+3. Sets current beneficiary
+
+*/
+//set the contribution amount per user, and participants function
+function setVar(uint _amt, uint _noOfParticipants) public  onlyOwner () {
+    contributionAmt = _amt;
+    maxParticipants = _noOfParticipants;
+    currentParticipants = 0;
+}
+function currentBeneficiary(address Address)public onlyOwner {
+    require(hasBeenBeneficiary[Address]==false,"Has already been a beneficiary");
+    recepient = Address;   
+}
+function FinishTime(uint _time) public onlyOwner{
+    require(block.timestamp<_time,"Ending time should be into the future");
+    endTime = _time;
+}
+
+/*
+@contributer functions
+1. Joins a pool
+2. Pays a deposit to the smart contract
+3. Pays set amount
+*/
+function joinPool()public payable {
+    uint depositAmt = 2*contributionAmt; 
+    require(currentParticipants<maxParticipants,"Pool is full");
+    require(msg.value==depositAmt,"Incorrect Value Sent");
+    verifiedUser[msg.sender].balance = depositAmt;
+    verifiedUser[msg.sender].hasApproved = true;
+    currentParticipants++;
+}
+//contribute function variables to be used
+uint public PoolBalance;
+struct poolDetails {
+  uint paidTotal;
+  bool hasPaid;
+}
+mapping (address => poolDetails)public poolContribution;
+function contribute() public payable {
+    require(verifiedUser[msg.sender].hasApproved==true, "Not an approved contributor");
+    require(msg.value==contributionAmt,"Incorrect Value Sent");
+    PoolBalance+=msg.value;
+    poolContribution[msg.sender].paidTotal+=msg.value;
+    poolContribution[msg.sender].hasPaid=true;
+}
+
+}
