@@ -2,15 +2,15 @@
 pragma solidity 0.8.17;
 
 contract savingPool {
-        address public owner;
-        address public recepient;
+        address internal owner; 
+        address internal recepient;
 
         // state variables used by owner function
-        uint public currentParticipants;
+        uint internal currentParticipants;
         uint public contributionAmt;
         uint public maxParticipants;
        uint public endTime;
-        mapping (address => bool) hasBeenBeneficiary;
+        mapping (address => bool) internal hasBeenBeneficiary;
 
     struct depositPayment {
         uint balance;
@@ -34,10 +34,11 @@ modifier onlyOwner {
 
 */
 //set the contribution amount per user, and participants function
-function setVar(uint _amt, uint _noOfParticipants) public  onlyOwner () {
+function setPoolDetails(uint _amt, uint _noOfParticipants) external  onlyOwner {
+    require(_amt!=0 && _noOfParticipants!=0, "We can't have an empty pool");
     contributionAmt = _amt;
     maxParticipants = _noOfParticipants;
-    currentParticipants = 0;
+   
 }
 function currentBeneficiary(address Address)public onlyOwner {
     require(hasBeenBeneficiary[Address]==false,"Has already been a beneficiary");
@@ -55,6 +56,7 @@ function FinishTime(uint _time) public onlyOwner{
 3. Pays set amount
 */
 function joinPool()public payable {
+    require(verifiedUser[msg.sender].hasApproved==false, "Already in the pool");
     uint depositAmt = 2*contributionAmt; 
     require(currentParticipants<maxParticipants,"Pool is full");
     require(msg.value==depositAmt,"Incorrect Value Sent");
@@ -69,16 +71,18 @@ struct poolDetails {
   bool hasPaid;
 }
 mapping (address => poolDetails)public poolContribution;
-function contribute() public payable {
-    require(verifiedUser[msg.sender].hasApproved==true, "Not an approved contributor");
+function contribute() external payable {
+    require(verifiedUser[msg.sender].hasApproved, "Not an approved contributor");
     require(msg.value==contributionAmt,"Incorrect Value Sent");
+
+    
     PoolBalance+=msg.value;
     poolContribution[msg.sender].paidTotal+=msg.value;
     poolContribution[msg.sender].hasPaid=true;
 }
 
 //withdraw function can only be accessed by the current recepient
-function withdrawPool() public  {
+function withdrawPool() external  {
     require(msg.sender==recepient,"It is not your turn to receive the pool");
     uint send = PoolBalance;
     PoolBalance=0;
